@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing & Coverage
+coverage/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Production builds
+dist/
+build/
+
+# SQLite databases & logs
+*.db
+*.sqlite3
+*.log
+
+# Environment & Local settings
+.env
+.env.local
+.env.*.local
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
