@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -152,12 +152,26 @@ def save_scan(scan_type: str, input_preview: str, result: ScanResult):
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
-@app.get("/health")
+router = APIRouter()
+
+
+@router.get("/")
+def root():
+    return {
+        "status": "ok",
+        "service": "ScamShield API",
+        "version": "1.0.0",
+        "health": "/health",
+        "docs": "/docs",
+    }
+
+
+@router.get("/health")
 def health():
     return {"status": "ok", "service": "ScamShield API"}
 
 
-@app.post("/analyze/url", response_model=ScanResult)
+@router.post("/analyze/url", response_model=ScanResult)
 def analyze_url_endpoint(req: URLRequest):
     if not req.url.strip():
         raise HTTPException(400, "URL must not be empty")
@@ -182,7 +196,7 @@ def analyze_url_endpoint(req: URLRequest):
     return result
 
 
-@app.post("/analyze/message", response_model=ScanResult)
+@router.post("/analyze/message", response_model=ScanResult)
 def analyze_message_endpoint(req: MessageRequest):
     if not req.text.strip():
         raise HTTPException(400, "Message text must not be empty")
@@ -206,7 +220,7 @@ def analyze_message_endpoint(req: MessageRequest):
     return result
 
 
-@app.get("/history", response_model=list[HistoryItem])
+@router.get("/history", response_model=list[HistoryItem])
 def get_history(limit: int = 20):
     with get_db() as conn:
         rows = conn.execute(
@@ -217,7 +231,7 @@ def get_history(limit: int = 20):
     return [dict(r) for r in rows]
 
 
-@app.get("/history/{scan_id}", response_model=ScanResult)
+@router.get("/history/{scan_id}", response_model=ScanResult)
 def get_scan_detail(scan_id: str):
     with get_db() as conn:
         row = conn.execute(
@@ -228,7 +242,7 @@ def get_scan_detail(scan_id: str):
     return json.loads(row["full_result"])
 
 
-@app.delete("/history")
+@router.delete("/history")
 def clear_history():
     with get_db() as conn:
         conn.execute("DELETE FROM scan_history")
@@ -323,7 +337,7 @@ DEMO_CASES = [
 ]
 
 
-@app.get("/stats")
+@router.get("/stats")
 def get_stats():
     with get_db() as conn:
         total = conn.execute("SELECT COUNT(*) FROM scan_history").fetchone()[0]
@@ -346,12 +360,12 @@ def get_stats():
     }
 
 
-@app.get("/demo-cases")
+@router.get("/demo-cases")
 def get_demo_cases():
     return DEMO_CASES
 
 
-@app.post("/demo-cases/{case_id}/run")
+@router.post("/demo-cases/{case_id}/run")
 def run_demo_case(case_id: str):
     case = next((c for c in DEMO_CASES if c["id"] == case_id), None)
     if not case:
@@ -377,3 +391,7 @@ def run_demo_case(case_id: str):
         }
 
     return result
+
+
+app.include_router(router)
+app.include_router(router, prefix="/api")

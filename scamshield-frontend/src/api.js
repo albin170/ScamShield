@@ -1,6 +1,11 @@
 import axios from 'axios'
+const rawBaseUrl =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? 'https://scamshield-yj85.onrender.com' : '/api')
 
-const api = axios.create({ baseURL: '/api' })
+const baseURL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl
+
+const api = axios.create({ baseURL })
 
 export const analyzeURL = (url) => api.post('/analyze/url', { url })
 export const analyzeMessage = (text) => api.post('/analyze/message', { text })
